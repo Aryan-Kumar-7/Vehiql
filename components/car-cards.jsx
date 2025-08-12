@@ -1,21 +1,55 @@
 "use client"
 
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Card, CardContent } from './ui/card'
 import Image from 'next/image'
-import { CarIcon, Ghost, Heart } from 'lucide-react'
+import { CarIcon, Ghost, Heart, Loader2 } from 'lucide-react'
 import { Button } from './ui/button'
 import { Badge } from './ui/badge'
 import { useRouter } from 'next/navigation'
+import useFetch from '@/hooks/use-fetch'
+import { toggleSavedCar } from '@/actions/car-listing'
+import { useAuth } from '@clerk/nextjs'
+import { toast } from 'sonner'
 
 const CarCard = ({ car }) => {
 
-    const [isSaved, setIsSaved] = useState(false)
-
+    const [isSaved, setIsSaved] = useState(car.wishlisted);
     const router = useRouter();
+    const {isSignedIn} = useAuth();
+
+    const {
+        loading: isToggling,
+        fn: toggleSavedCarFn,
+        data: toggleResult,
+        error: toggleError,
+    } = useFetch(toggleSavedCar);
+
+    useEffect(() => {
+        if(toggleResult?.success && toggleResult.saved !== isSaved){
+            setIsSaved(toggleResult.saved);
+            toast.success(toggleResult.message);
+        }
+    }, [toggleResult, isSaved]);
+
+    useEffect(()=> {
+        if(toggleError){
+            toast.error("Failed to update favorites")
+        }
+    }, [toggleError])
 
     const handleToggleSave = async (e) => {
+        e.preventDefault();
 
+        if(!isSignedIn){
+            toast.error("Please sign in to save cars");
+            router.push("/sign-in");
+            return;
+        }
+
+        if(isToggling) return
+
+        await toggleSavedCarFn(car.id);
     }
 
     return (
@@ -32,7 +66,11 @@ const CarCard = ({ car }) => {
                 )}
 
                 <Button variant="ghost" size="icon" className={`absolute top-2 right-2 rounded-full p-1.5 bg-white/90 ${isSaved ? 'text-red-500 hover:text-red-600' : 'text-gray-600 hover:text-gray-900'}`} onClick={handleToggleSave}>
-                    <Heart className={isSaved ? "fill-current" : ""} size={20} />
+                    {isToggling ? (
+                        <Loader2 className='h-4 w-4 animate-spin' />
+                    ) : (
+                        <Heart className={isSaved ? "fill-current" : ""} size={20} />
+                    )}
                 </Button>
             </div>
 

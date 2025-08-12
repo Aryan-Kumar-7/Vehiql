@@ -261,7 +261,7 @@ const CarFilters = ({ filters }) => {
                         )}
                     </div>
 
-                    <div className='py-6'>
+                    <div className='p-4'>
                         <CarFilterControls filters={filters} currentFilters={currentFilters}
                             onFilterChange={handleFilterChange}
                             onClearFilter={handleClearFilter}
