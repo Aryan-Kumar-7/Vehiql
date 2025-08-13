@@ -14,9 +14,9 @@ import { toast } from 'sonner'
 
 const CarCard = ({ car }) => {
 
-    const [isSaved, setIsSaved] = useState(car.wishlisted);
+    const { isSignedIn } = useAuth();
     const router = useRouter();
-    const {isSignedIn} = useAuth();
+    const [isSaved, setIsSaved] = useState(car.wishlisted);
 
     const {
         loading: isToggling,
@@ -26,28 +26,34 @@ const CarCard = ({ car }) => {
     } = useFetch(toggleSavedCar);
 
     useEffect(() => {
-        if(toggleResult?.success && toggleResult.saved !== isSaved){
+        if (toggleResult?.success && toggleResult.saved !== isSaved) {
             setIsSaved(toggleResult.saved);
             toast.success(toggleResult.message);
         }
     }, [toggleResult, isSaved]);
 
-    useEffect(()=> {
-        if(toggleError){
+    useEffect(() => {
+        setIsSaved(car.wishlisted);
+    }, [car.wishlisted]);
+
+
+    useEffect(() => {
+        if (toggleError) {
             toast.error("Failed to update favorites")
         }
     }, [toggleError])
 
     const handleToggleSave = async (e) => {
         e.preventDefault();
+        e.stopPropagation();
 
-        if(!isSignedIn){
+        if (!isSignedIn) {
             toast.error("Please sign in to save cars");
             router.push("/sign-in");
             return;
         }
 
-        if(isToggling) return
+        if (isToggling) return
 
         await toggleSavedCarFn(car.id);
     }
@@ -65,7 +71,7 @@ const CarCard = ({ car }) => {
                     </div>
                 )}
 
-                <Button variant="ghost" size="icon" className={`absolute top-2 right-2 rounded-full p-1.5 bg-white/90 ${isSaved ? 'text-red-500 hover:text-red-600' : 'text-gray-600 hover:text-gray-900'}`} onClick={handleToggleSave}>
+                <Button variant="ghost" size="icon" className={`absolute top-2 right-2 rounded-full p-1.5 bg-white/90 ${isSaved ? 'text-red-500 hover:text-red-600' : 'text-gray-600 hover:text-gray-900'}`} onClick={handleToggleSave} disabled={isToggling}>
                     {isToggling ? (
                         <Loader2 className='h-4 w-4 animate-spin' />
                     ) : (

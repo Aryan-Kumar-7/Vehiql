@@ -5,9 +5,31 @@ import { db } from "@/lib/prisma";
 import { request } from "@arcjet/next";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import aj from "@/lib/arcjet";
+import { auth } from "@clerk/nextjs/server";
 
 export const getFeaturedCars = async (limit = 3) => {
     try {
+        const { userId } = await auth();
+
+        let wishlistIds = new Set();
+
+        // If user is logged in, fetch wishlist
+        if (userId) {
+            const user = await db.user.findUnique({
+                where: {
+                    clerkUserId: userId,
+                },
+            });
+
+            if (user) {
+                const savedCars = await db.userSavedCar.findMany({
+                    where: { userId: user.id },
+                    select: { carId: true },
+                });
+                wishlistIds = new Set(savedCars.map(saved => saved.carId));
+            }
+        }
+
         const cars = await db.car.findMany({
             where: {
                 featured: true,
@@ -17,12 +39,16 @@ export const getFeaturedCars = async (limit = 3) => {
             orderBy: { createdAt: "desc" },
         });
 
-        return cars.map(serializeCarData);
+        return cars.map(car => ({
+            ...serializeCarData(car),
+            wishlisted: wishlistIds.has(car.id),
+        }));
 
     } catch (error) {
-        throw new Error("Error fetching cars:" + error.message);
+        throw new Error("Error fetching cars: " + error.message);
     }
-}
+};
+
 
 async function fileToBase64(file) {
     const bytes = await file.arrayBuffer();
@@ -111,6 +137,6 @@ export const processImageSearch = async (file) => {
         }
 
     } catch (error) {
-        throw new Error ("AI Search Error:"+ error.message);
+        throw new Error("AI Search Error:" + error.message);
     }
 }
