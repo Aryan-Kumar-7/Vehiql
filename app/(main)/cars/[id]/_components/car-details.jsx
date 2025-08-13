@@ -15,6 +15,7 @@ import React, { useEffect, useState } from 'react'
 import { toast } from 'sonner';
 import EmiCalculator from './emi-calculator';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { format } from 'date-fns';
 
 const CarDetails = ({ car, testDriveInfo }) => {
 
